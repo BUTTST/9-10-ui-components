@@ -130,17 +130,6 @@ export default function RootLayout({
           }}
         />
         
-        <style jsx global>{`
-          :root {
-            --toast-bg: #ffffff;
-            --toast-color: #111827;
-          }
-          
-          .dark {
-            --toast-bg: #1f2937;
-            --toast-color: #f9fafb;
-          }
-        `}</style>
       </body>
     </html>
   )
