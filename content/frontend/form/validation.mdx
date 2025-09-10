@@ -1,0 +1,930 @@
+---
+title: "表單驗證與錯誤處理"
+description: "使用 zod + react-hook-form 建立強型別表單驗證，支援即時驗證、錯誤訊息關聯與 Server Actions"
+domain: "frontend"
+tech: ["react", "typescript", "nextjs", "tailwind"]
+intent: ["表單", "微互動"]
+category: "form"
+tags: ["驗證", "表單", "錯誤處理", "無障礙", "server-actions"]
+updated: "2024-01-15"
+design_intent:
+  goal: "建立可重用的表單驗證系統，提供良好的用戶體驗和開發者體驗"
+  constraints: ["必須支援即時驗證", "錯誤訊息要無障礙", "要支援 Server Actions"]
+  variations: ["登入表單", "註冊表單", "設定表單", "多步驟表單"]
+react_patterns: ["controlled components", "custom hooks", "error boundaries", "compound components"]
+tailwind_tokens:
+  forms: "@tailwindcss/forms plugin"
+  states: "border-red-500 text-red-600, border-green-500 text-green-600"
+  spacing: "space-y-4, gap-2"
+  focus: "focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+next_features: ["Server Actions", "useFormState", "revalidatePath", "redirect"]
+ts_types: ["FormData", "ValidationSchema", "FormErrors", "FieldProps"]
+ai_prompt: |
+  請幫我建立一個現代化的表單驗證系統，要求如下：
+
+  技術規格：
+  - React Hook Form + Zod 驗證
+  - TypeScript 嚴格型別
+  - Next.js Server Actions 支援
+  - Tailwind CSS 樣式
+  - 完整的無障礙支援
+
+  功能需求：
+  1. 即時欄位驗證
+  2. 表單提交驗證
+  3. 錯誤訊息顯示
+  4. 載入狀態管理
+  5. 成功/失敗回饋
+
+  驗證需求：
+  1. 必填欄位檢查
+  2. 格式驗證（email, phone, etc.）
+  3. 長度限制
+  4. 自定義驗證規則
+  5. 跨欄位驗證
+
+  無障礙需求：
+  - aria-describedby 關聯錯誤訊息
+  - aria-invalid 標記無效欄位
+  - 適當的 label 關聯
+  - 鍵盤導航支援
+
+  請提供完整的表單系統，包含驗證 schema、元件實作和使用範例。
+links:
+  - label: "React Hook Form Documentation"
+    url: "https://react-hook-form.com/"
+  - label: "Zod Validation Library"
+    url: "https://zod.dev/"
+---
+
+# 表單驗證與錯誤處理
+
+表單是 Web 應用中用戶互動的核心部分。一個好的表單驗證系統不僅能確保資料品質，還能提供良好的用戶體驗。本文將介紹如何使用 React Hook Form + Zod 建立一個完整的表單驗證系統。
+
+## 設計原則
+
+優秀的表單驗證應該：
+- **即時回饋**：在用戶輸入時提供即時驗證
+- **清晰錯誤**：錯誤訊息要具體且易懂
+- **無障礙**：支援螢幕閱讀器和鍵盤導航
+- **效能**：避免不必要的重新渲染
+
+## 核心架構
+
+### 依賴安裝
+
+```bash
+npm install react-hook-form zod @hookform/resolvers
+npm install @tailwindcss/forms
+```
+
+### TypeScript 型別定義
+
+```typescript
+import { z } from 'zod'
+import { UseFormReturn, FieldError } from 'react-hook-form'
+
+// 基礎表單欄位屬性
+export interface BaseFieldProps {
+  label: string
+  name: string
+  required?: boolean
+  disabled?: boolean
+  placeholder?: string
+  helperText?: string
+  className?: string
+}
+
+// 輸入欄位屬性
+export interface InputFieldProps extends BaseFieldProps {
+  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number'
+  autoComplete?: string
+  maxLength?: number
+  minLength?: number
+}
+
+// 選擇欄位屬性
+export interface SelectFieldProps extends BaseFieldProps {
+  options: Array<{
+    value: string
+    label: string
+    disabled?: boolean
+  }>
+  placeholder?: string
+}
+
+// 文字區域屬性
+export interface TextareaFieldProps extends BaseFieldProps {
+  rows?: number
+  maxLength?: number
+  resize?: boolean
+}
+
+// 表單錯誤類型
+export interface FormError {
+  field: string
+  message: string
+  type: string
+}
+
+// 表單狀態
+export interface FormState {
+  isSubmitting: boolean
+  isValid: boolean
+  errors: Record<string, FieldError>
+  isDirty: boolean
+  touchedFields: Record<string, boolean>
+}
+```
+
+### Zod 驗證 Schema
+
+```typescript
+import { z } from 'zod'
+
+// 基礎驗證規則
+const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+
+// 用戶註冊表單 Schema
+export const userRegistrationSchema = z.object({
+  // 基本資訊
+  firstName: z
+    .string()
+    .min(1, '名字是必填的')
+    .min(2, '名字至少需要 2 個字符')
+    .max(50, '名字不能超過 50 個字符'),
+  
+  lastName: z
+    .string()
+    .min(1, '姓氏是必填的')
+    .min(2, '姓氏至少需要 2 個字符')
+    .max(50, '姓氏不能超過 50 個字符'),
+  
+  // 聯絡資訊
+  email: z
+    .string()
+    .min(1, 'Email 是必填的')
+    .email('請輸入有效的 Email 地址')
+    .max(100, 'Email 不能超過 100 個字符'),
+  
+  phone: z
+    .string()
+    .optional()
+    .refine((val) => !val || phoneRegex.test(val), {
+      message: '請輸入有效的電話號碼'
+    }),
+  
+  // 密碼
+  password: z
+    .string()
+    .min(8, '密碼至少需要 8 個字符')
+    .regex(passwordRegex, '密碼必須包含大小寫字母、數字和特殊字符'),
+  
+  confirmPassword: z
+    .string()
+    .min(1, '請確認密碼'),
+  
+  // 同意條款
+  agreedToTerms: z
+    .boolean()
+    .refine((val) => val === true, {
+      message: '必須同意使用條款'
+    }),
+  
+  // 可選欄位
+  newsletter: z.boolean().default(false),
+  
+  bio: z
+    .string()
+    .max(500, '個人簡介不能超過 500 個字符')
+    .optional()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: '密碼確認不一致',
+  path: ['confirmPassword']
+})
+
+// 推斷型別
+export type UserRegistrationData = z.infer<typeof userRegistrationSchema>
+
+// 登入表單 Schema
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, '請輸入 Email')
+    .email('請輸入有效的 Email 地址'),
+  
+  password: z
+    .string()
+    .min(1, '請輸入密碼'),
+  
+  rememberMe: z.boolean().default(false)
+})
+
+export type LoginData = z.infer<typeof loginSchema>
+
+// 聯絡表單 Schema
+export const contactSchema = z.object({
+  name: z
+    .string()
+    .min(1, '姓名是必填的')
+    .max(100, '姓名不能超過 100 個字符'),
+  
+  email: z
+    .string()
+    .min(1, 'Email 是必填的')
+    .email('請輸入有效的 Email 地址'),
+  
+  subject: z
+    .string()
+    .min(1, '主題是必填的')
+    .max(200, '主題不能超過 200 個字符'),
+  
+  message: z
+    .string()
+    .min(10, '訊息至少需要 10 個字符')
+    .max(1000, '訊息不能超過 1000 個字符'),
+  
+  category: z
+    .enum(['general', 'support', 'billing', 'feedback'], {
+      required_error: '請選擇分類'
+    })
+})
+
+export type ContactData = z.infer<typeof contactSchema>
+```
+
+### 表單欄位元件
+
+```tsx
+'use client'
+
+import { forwardRef, useId } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faExclamationCircle, faCheckCircle, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons'
+import { cn } from '@/lib/utils'
+
+// 輸入欄位元件
+export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
+  label,
+  name,
+  type = 'text',
+  required = false,
+  disabled = false,
+  placeholder,
+  helperText,
+  autoComplete,
+  maxLength,
+  className,
+  ...props
+}, ref) => {
+  const id = useId()
+  const {
+    register,
+    formState: { errors, touchedFields },
+    watch
+  } = useFormContext()
+  
+  const error = errors[name]
+  const isTouched = touchedFields[name]
+  const value = watch(name)
+  const hasValue = value && value.length > 0
+  const isValid = isTouched && !error && hasValue
+
+  return (
+    <div className={cn('space-y-2', className)}>
+      {/* Label */}
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        {label}
+        {required && (
+          <span className="text-red-500 ml-1" aria-label="必填">*</span>
+        )}
+      </label>
+
+      {/* Input Container */}
+      <div className="relative">
+        <input
+          {...register(name)}
+          ref={ref}
+          id={id}
+          type={type}
+          disabled={disabled}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          maxLength={maxLength}
+          className={cn(
+            'block w-full rounded-lg border px-3 py-2 shadow-sm transition-colors',
+            'placeholder-gray-400 dark:placeholder-gray-500',
+            'focus:outline-none focus:ring-2 focus:ring-offset-2',
+            // 預設狀態
+            'border-gray-300 dark:border-gray-600',
+            'bg-white dark:bg-gray-800',
+            'text-gray-900 dark:text-gray-100',
+            'focus:border-blue-500 focus:ring-blue-500',
+            // 錯誤狀態
+            error && [
+              'border-red-500 dark:border-red-400',
+              'focus:border-red-500 focus:ring-red-500'
+            ],
+            // 成功狀態
+            isValid && [
+              'border-green-500 dark:border-green-400',
+              'focus:border-green-500 focus:ring-green-500'
+            ],
+            // 禁用狀態
+            disabled && [
+              'bg-gray-50 dark:bg-gray-700',
+              'text-gray-500 dark:text-gray-400',
+              'cursor-not-allowed'
+            ]
+          )}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={cn(
+            error && `${id}-error`,
+            helperText && `${id}-help`
+          )}
+          {...props}
+        />
+
+        {/* 狀態圖示 */}
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+          {error && (
+            <FontAwesomeIcon
+              icon={faExclamationCircle}
+              className="h-5 w-5 text-red-500"
+              aria-hidden="true"
+            />
+          )}
+          {isValid && (
+            <FontAwesomeIcon
+              icon={faCheckCircle}
+              className="h-5 w-5 text-green-500"
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 錯誤訊息 */}
+      {error && (
+        <p
+          id={`${id}-error`}
+          className="text-sm text-red-600 dark:text-red-400"
+          role="alert"
+        >
+          {error.message}
+        </p>
+      )}
+
+      {/* 輔助文字 */}
+      {helperText && !error && (
+        <p
+          id={`${id}-help`}
+          className="text-sm text-gray-500 dark:text-gray-400"
+        >
+          {helperText}
+        </p>
+      )}
+
+      {/* 字數統計 */}
+      {maxLength && hasValue && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-right">
+          {value.length} / {maxLength}
+        </p>
+      )}
+    </div>
+  )
+})
+
+InputField.displayName = 'InputField'
+
+// 密碼欄位元件
+export const PasswordField = (props: Omit<InputFieldProps, 'type'>) => {
+  const [showPassword, setShowPassword] = useState(false)
+
+  return (
+    <div className="relative">
+      <InputField
+        {...props}
+        type={showPassword ? 'text' : 'password'}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-10 top-9 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+      >
+        <FontAwesomeIcon
+          icon={showPassword ? faEyeSlash : faEye}
+          className="h-4 w-4"
+        />
+      </button>
+    </div>
+  )
+}
+
+// 選擇欄位元件
+export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(({
+  label,
+  name,
+  options,
+  required = false,
+  disabled = false,
+  placeholder,
+  helperText,
+  className,
+  ...props
+}, ref) => {
+  const id = useId()
+  const {
+    register,
+    formState: { errors }
+  } = useFormContext()
+  
+  const error = errors[name]
+
+  return (
+    <div className={cn('space-y-2', className)}>
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        {label}
+        {required && (
+          <span className="text-red-500 ml-1" aria-label="必填">*</span>
+        )}
+      </label>
+
+      <select
+        {...register(name)}
+        ref={ref}
+        id={id}
+        disabled={disabled}
+        className={cn(
+          'block w-full rounded-lg border px-3 py-2 shadow-sm transition-colors',
+          'bg-white dark:bg-gray-800',
+          'text-gray-900 dark:text-gray-100',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2',
+          // 預設狀態
+          'border-gray-300 dark:border-gray-600',
+          'focus:border-blue-500 focus:ring-blue-500',
+          // 錯誤狀態
+          error && [
+            'border-red-500 dark:border-red-400',
+            'focus:border-red-500 focus:ring-red-500'
+          ],
+          // 禁用狀態
+          disabled && [
+            'bg-gray-50 dark:bg-gray-700',
+            'text-gray-500 dark:text-gray-400',
+            'cursor-not-allowed'
+          ]
+        )}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={cn(
+          error && `${id}-error`,
+          helperText && `${id}-help`
+        )}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      {error && (
+        <p
+          id={`${id}-error`}
+          className="text-sm text-red-600 dark:text-red-400"
+          role="alert"
+        >
+          {error.message}
+        </p>
+      )}
+
+      {helperText && !error && (
+        <p
+          id={`${id}-help`}
+          className="text-sm text-gray-500 dark:text-gray-400"
+        >
+          {helperText}
+        </p>
+      )}
+    </div>
+  )
+})
+
+SelectField.displayName = 'SelectField'
+
+// 文字區域元件
+export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>(({
+  label,
+  name,
+  rows = 4,
+  required = false,
+  disabled = false,
+  placeholder,
+  helperText,
+  maxLength,
+  resize = true,
+  className,
+  ...props
+}, ref) => {
+  const id = useId()
+  const {
+    register,
+    formState: { errors },
+    watch
+  } = useFormContext()
+  
+  const error = errors[name]
+  const value = watch(name) || ''
+
+  return (
+    <div className={cn('space-y-2', className)}>
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        {label}
+        {required && (
+          <span className="text-red-500 ml-1" aria-label="必填">*</span>
+        )}
+      </label>
+
+      <textarea
+        {...register(name)}
+        ref={ref}
+        id={id}
+        rows={rows}
+        disabled={disabled}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className={cn(
+          'block w-full rounded-lg border px-3 py-2 shadow-sm transition-colors',
+          'placeholder-gray-400 dark:placeholder-gray-500',
+          'bg-white dark:bg-gray-800',
+          'text-gray-900 dark:text-gray-100',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2',
+          // 調整大小
+          resize ? 'resize-y' : 'resize-none',
+          // 預設狀態
+          'border-gray-300 dark:border-gray-600',
+          'focus:border-blue-500 focus:ring-blue-500',
+          // 錯誤狀態
+          error && [
+            'border-red-500 dark:border-red-400',
+            'focus:border-red-500 focus:ring-red-500'
+          ],
+          // 禁用狀態
+          disabled && [
+            'bg-gray-50 dark:bg-gray-700',
+            'text-gray-500 dark:text-gray-400',
+            'cursor-not-allowed'
+          ]
+        )}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={cn(
+          error && `${id}-error`,
+          helperText && `${id}-help`,
+          maxLength && `${id}-count`
+        )}
+        {...props}
+      />
+
+      {error && (
+        <p
+          id={`${id}-error`}
+          className="text-sm text-red-600 dark:text-red-400"
+          role="alert"
+        >
+          {error.message}
+        </p>
+      )}
+
+      <div className="flex justify-between">
+        {helperText && !error && (
+          <p
+            id={`${id}-help`}
+            className="text-sm text-gray-500 dark:text-gray-400"
+          >
+            {helperText}
+          </p>
+        )}
+        
+        {maxLength && (
+          <p
+            id={`${id}-count`}
+            className="text-xs text-gray-500 dark:text-gray-400"
+          >
+            {value.length} / {maxLength}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+})
+
+TextareaField.displayName = 'TextareaField'
+```
+
+## 使用範例
+
+### 註冊表單
+
+```tsx
+'use client'
+
+import { useForm, FormProvider } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { userRegistrationSchema, type UserRegistrationData } from '@/lib/schemas'
+import { InputField, PasswordField, SelectField, TextareaField } from '@/components/Form'
+import { registerUser } from '@/app/actions'
+
+export default function RegistrationForm() {
+  const methods = useForm<UserRegistrationData>({
+    resolver: zodResolver(userRegistrationSchema),
+    mode: 'onBlur', // 失去焦點時驗證
+    defaultValues: {
+      newsletter: false,
+      agreedToTerms: false
+    }
+  })
+
+  const {
+    handleSubmit,
+    formState: { isSubmitting, isValid }
+  } = methods
+
+  const onSubmit = async (data: UserRegistrationData) => {
+    try {
+      const result = await registerUser(data)
+      if (result.success) {
+        // 處理成功
+        toast.success('註冊成功！')
+      } else {
+        // 處理錯誤
+        toast.error(result.error)
+      }
+    } catch (error) {
+      toast.error('註冊失敗，請稍後再試')
+    }
+  }
+
+  return (
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+      <h2 className="text-2xl font-bold text-center mb-6">用戶註冊</h2>
+      
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* 基本資訊 */}
+          <div className="grid grid-cols-2 gap-4">
+            <InputField
+              name="firstName"
+              label="名字"
+              required
+              autoComplete="given-name"
+            />
+            <InputField
+              name="lastName"
+              label="姓氏"
+              required
+              autoComplete="family-name"
+            />
+          </div>
+
+          {/* 聯絡資訊 */}
+          <InputField
+            name="email"
+            label="Email"
+            type="email"
+            required
+            autoComplete="email"
+            helperText="我們不會分享您的 Email 地址"
+          />
+
+          <InputField
+            name="phone"
+            label="電話號碼"
+            type="tel"
+            autoComplete="tel"
+            helperText="選填，用於重要通知"
+          />
+
+          {/* 密碼 */}
+          <PasswordField
+            name="password"
+            label="密碼"
+            required
+            autoComplete="new-password"
+            helperText="至少 8 個字符，包含大小寫字母、數字和特殊字符"
+          />
+
+          <PasswordField
+            name="confirmPassword"
+            label="確認密碼"
+            required
+            autoComplete="new-password"
+          />
+
+          {/* 個人簡介 */}
+          <TextareaField
+            name="bio"
+            label="個人簡介"
+            maxLength={500}
+            helperText="簡單介紹一下自己（選填）"
+          />
+
+          {/* 同意條款 */}
+          <div className="space-y-3">
+            <label className="flex items-start gap-3">
+              <input
+                {...methods.register('agreedToTerms')}
+                type="checkbox"
+                className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                我已閱讀並同意
+                <a href="/terms" className="text-blue-600 hover:text-blue-700">
+                  使用條款
+                </a>
+                和
+                <a href="/privacy" className="text-blue-600 hover:text-blue-700">
+                  隱私政策
+                </a>
+              </span>
+            </label>
+
+            <label className="flex items-center gap-3">
+              <input
+                {...methods.register('newsletter')}
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                訂閱電子報，接收最新消息
+              </span>
+            </label>
+          </div>
+
+          {/* 提交按鈕 */}
+          <button
+            type="submit"
+            disabled={isSubmitting || !isValid}
+            className={cn(
+              'w-full py-3 px-4 rounded-lg font-medium transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500',
+              isSubmitting || !isValid
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            )}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                註冊中...
+              </div>
+            ) : (
+              '建立帳戶'
+            )}
+          </button>
+        </form>
+      </FormProvider>
+    </div>
+  )
+}
+```
+
+## Server Actions 整合
+
+```tsx
+// app/actions.ts
+'use server'
+
+import { z } from 'zod'
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { userRegistrationSchema } from '@/lib/schemas'
+
+export async function registerUser(data: z.infer<typeof userRegistrationSchema>) {
+  try {
+    // 伺服器端驗證
+    const validatedData = userRegistrationSchema.parse(data)
+    
+    // 檢查 Email 是否已存在
+    const existingUser = await db.user.findUnique({
+      where: { email: validatedData.email }
+    })
+    
+    if (existingUser) {
+      return {
+        success: false,
+        error: '此 Email 已被註冊'
+      }
+    }
+    
+    // 建立用戶
+    const user = await db.user.create({
+      data: {
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        email: validatedData.email,
+        phone: validatedData.phone,
+        password: await hashPassword(validatedData.password),
+        bio: validatedData.bio,
+        newsletter: validatedData.newsletter
+      }
+    })
+    
+    // 重新驗證相關頁面
+    revalidatePath('/dashboard')
+    
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`
+      }
+    }
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: '資料驗證失敗',
+        details: error.errors
+      }
+    }
+    
+    return {
+      success: false,
+      error: '註冊失敗，請稍後再試'
+    }
+  }
+}
+```
+
+## 常見陷阱與解決方案
+
+### 1. 驗證時機
+```tsx
+// ❌ 錯誤：只在提交時驗證
+const methods = useForm({
+  mode: 'onSubmit' // 只在提交時驗證
+})
+
+// ✅ 正確：合適的驗證時機
+const methods = useForm({
+  mode: 'onBlur', // 失去焦點時驗證
+  reValidateMode: 'onChange' // 修正錯誤後即時重新驗證
+})
+```
+
+### 2. 錯誤訊息無障礙
+```tsx
+// ❌ 錯誤：錯誤訊息沒有正確關聯
+<input name="email" />
+<div className="error">{errors.email?.message}</div>
+
+// ✅ 正確：使用 aria-describedby 關聯
+<input
+  name="email"
+  aria-invalid={errors.email ? 'true' : 'false'}
+  aria-describedby="email-error"
+/>
+<div id="email-error" role="alert">
+  {errors.email?.message}
+</div>
+```
+
+### 3. 表單重置處理
+```tsx
+// 成功提交後重置表單
+const onSubmit = async (data) => {
+  try {
+    await submitForm(data)
+    methods.reset() // 重置表單
+    toast.success('提交成功！')
+  } catch (error) {
+    toast.error('提交失敗')
+  }
+}
+```
+
+這個表單驗證系統提供了完整的功能和良好的用戶體驗，可以處理各種複雜的驗證需求。記住要根據具體的業務邏輯調整驗證規則和錯誤處理。

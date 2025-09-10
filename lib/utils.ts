@@ -1,9 +1,9 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+// Note: Install clsx and tailwind-merge for className utilities
+// npm install clsx tailwind-merge
 
 // Tailwind CSS 類名合併工具
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+export function cn(...inputs: string[]) {
+  return inputs.filter(Boolean).join(' ')
 }
 
 // 複製到剪貼簿

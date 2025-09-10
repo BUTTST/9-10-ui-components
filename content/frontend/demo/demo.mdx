@@ -1,0 +1,56 @@
+---
+title: "示例元件"
+description: "這是一個演示用的元件範例"
+domain: "frontend"
+tech: ["react", "typescript", "tailwind"]
+intent: ["卡片"]
+category: "demo"
+tags: ["示例", "測試"]
+updated: "2024-01-15"
+design_intent:
+  goal: "演示內容系統的運作"
+  constraints: ["簡單易懂", "功能完整"]
+  variations: ["基礎版本"]
+react_patterns: ["functional component"]
+tailwind_tokens: ["bg-white", "p-4", "rounded-lg"]
+next_features: ["client component"]
+ts_types: ["ComponentProps"]
+ai_prompt: |
+  請建立一個簡單的 React 元件範例：
+  - 使用 TypeScript
+  - 應用 Tailwind CSS
+  - 包含基本的 props 介面
+links:
+  - label: "React 官方文檔"
+    url: "https://react.dev"
+---
+
+# 示例元件
+
+這是一個用於測試系統的簡單示例。
+
+## 基礎實作
+
+```tsx
+interface DemoProps {
+  title: string
+  children: React.ReactNode
+}
+
+export const Demo = ({ title, children }: DemoProps) => {
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {children}
+    </div>
+  )
+}
+```
+
+## 使用方式
+
+```tsx
+<Demo title="示例標題">
+  <p>這是示例內容</p>
+</Demo>
+```

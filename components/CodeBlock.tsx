@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+// Note: Install react-syntax-highlighter for syntax highlighting
+// npm install react-syntax-highlighter @types/react-syntax-highlighter
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { copyToClipboard, isDarkMode } from '@/lib/utils'
@@ -94,25 +94,11 @@ export default function CodeBlock({
 
       {/* Code Content */}
       <div className={`relative overflow-hidden ${!isExpanded && shouldShowExpand ? 'max-h-96' : ''}`}>
-        <SyntaxHighlighter
-          language={language}
-          style={isDark ? oneDark : oneLight}
-          showLineNumbers={showLineNumbers}
-          customStyle={{
-            margin: 0,
-            padding: '1rem',
-            background: 'transparent',
-            fontSize: '0.875rem',
-            lineHeight: '1.5'
-          }}
-          codeTagProps={{
-            style: {
-              fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace'
-            }
-          }}
-        >
-          {code}
-        </SyntaxHighlighter>
+        <pre className="overflow-x-auto">
+          <code className="block p-4 text-sm font-mono">
+            {code}
+          </code>
+        </pre>
 
         {/* Expand Gradient */}
         {!isExpanded && shouldShowExpand && (

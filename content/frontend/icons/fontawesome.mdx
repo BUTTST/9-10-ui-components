@@ -1,0 +1,509 @@
+---
+title: "Font Awesome 圖示系統"
+description: "Font Awesome 圖示的正確使用方式，包含無障礙設計、尺寸控制和顏色主題"
+domain: "frontend"
+tech: ["react", "fontawesome", "typescript", "tailwind"]
+intent: ["圖示系統"]
+category: "icons"
+tags: ["圖示", "無障礙", "設計系統"]
+updated: "2024-01-15"
+design_intent:
+  goal: "建立一致且無障礙的圖示系統"
+  constraints: ["必須支援螢幕閱讀器", "要有適當的對比度", "需要響應式尺寸"]
+  variations: ["實心圖示", "線框圖示", "品牌圖示", "動畫圖示"]
+react_patterns: ["icon components", "prop interfaces", "accessibility helpers"]
+tailwind_tokens:
+  sizes: "text-sm, text-lg, text-2xl, w-4 h-4, w-6 h-6"
+  colors: "text-blue-500, text-gray-600, hover:text-blue-700"
+next_features: ["tree-shaking", "dynamic imports", "client components"]
+ts_types: ["IconProps", "IconSize", "IconColor", "AriaProps"]
+ai_prompt: |
+  請幫我建立一個 Font Awesome 圖示系統，要求如下：
+
+  技術規格：
+  - @fortawesome/react-fontawesome
+  - TypeScript 嚴格型別
+  - Tailwind CSS 樣式整合
+  - 完整的無障礙支援
+
+  功能需求：
+  1. 統一的圖示元件介面
+  2. 多種尺寸和顏色選項
+  3. 動畫效果支援
+  4. 響應式設計
+
+  無障礙需求：
+  - 裝飾性圖示使用 aria-hidden
+  - 功能性圖示提供 aria-label
+  - 適當的對比度
+  - 螢幕閱讀器友善
+
+  請提供完整的圖示系統，包含元件封裝和使用範例。
+links:
+  - label: "Font Awesome React Documentation"
+    url: "https://fontawesome.com/docs/web/use-with/react/"
+  - label: "Icon Accessibility Guide"
+    url: "https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/"
+---
+
+# Font Awesome 圖示系統
+
+Font Awesome 是最受歡迎的圖示庫之一，提供了豐富的圖示資源。正確使用 Font Awesome 不僅能提升視覺效果，還能確保良好的無障礙體驗。
+
+## 基礎設定
+
+### 安裝與配置
+
+```bash
+npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons @fortawesome/free-regular-svg-icons @fortawesome/free-brands-svg-icons
+```
+
+### TypeScript 型別定義
+
+```typescript
+import { IconProp } from '@fortawesome/fontawesome-svg-core'
+
+export type IconSize = 'xs' | 'sm' | 'lg' | 'xl' | '2xl' | '3xl'
+export type IconColor = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'muted'
+
+export interface BaseIconProps {
+  icon: IconProp
+  size?: IconSize
+  color?: IconColor
+  className?: string
+  spin?: boolean
+  pulse?: boolean
+  rotation?: 90 | 180 | 270
+  flip?: 'horizontal' | 'vertical' | 'both'
+}
+
+export interface DecorativeIconProps extends BaseIconProps {
+  'aria-hidden': true
+  role?: never
+  'aria-label'?: never
+}
+
+export interface FunctionalIconProps extends BaseIconProps {
+  'aria-hidden'?: never
+  role?: 'img'
+  'aria-label': string
+}
+
+export type IconProps = DecorativeIconProps | FunctionalIconProps
+```
+
+### 圖示元件封裝
+
+```tsx
+'use client'
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { cn } from '@/lib/utils'
+import type { IconProps, IconSize, IconColor } from './types'
+
+// 尺寸對應
+const sizeClasses: Record<IconSize, string> = {
+  xs: 'text-xs',
+  sm: 'text-sm', 
+  lg: 'text-lg',
+  xl: 'text-xl',
+  '2xl': 'text-2xl',
+  '3xl': 'text-3xl'
+}
+
+// 顏色對應
+const colorClasses: Record<IconColor, string> = {
+  primary: 'text-blue-600 dark:text-blue-400',
+  secondary: 'text-purple-600 dark:text-purple-400',
+  success: 'text-green-600 dark:text-green-400',
+  warning: 'text-yellow-600 dark:text-yellow-400',
+  danger: 'text-red-600 dark:text-red-400',
+  muted: 'text-gray-500 dark:text-gray-400'
+}
+
+export const Icon = ({
+  icon,
+  size = 'sm',
+  color = 'muted',
+  className,
+  spin = false,
+  pulse = false,
+  rotation,
+  flip,
+  ...ariaProps
+}: IconProps) => {
+  return (
+    <FontAwesomeIcon
+      icon={icon}
+      spin={spin}
+      pulse={pulse}
+      rotation={rotation}
+      flip={flip}
+      className={cn(
+        sizeClasses[size],
+        colorClasses[color],
+        'inline-block',
+        className
+      )}
+      {...ariaProps}
+    />
+  )
+}
+
+// 裝飾性圖示（不需要無障礙標籤）
+export const DecorativeIcon = (props: Omit<IconProps, 'aria-hidden' | 'aria-label'>) => (
+  <Icon {...props} aria-hidden />
+)
+
+// 功能性圖示（需要無障礙標籤）
+export const FunctionalIcon = (props: Omit<IconProps, 'aria-hidden'> & { label: string }) => (
+  <Icon {...props} aria-label={props.label} role="img" />
+)
+```
+
+## 常用圖示元件
+
+### 狀態圖示
+
+```tsx
+import { 
+  faCheckCircle, 
+  faExclamationTriangle, 
+  faInfoCircle, 
+  faTimesCircle 
+} from '@fortawesome/free-solid-svg-icons'
+
+export const StatusIcon = ({ 
+  status, 
+  size = 'sm',
+  showLabel = false 
+}: { 
+  status: 'success' | 'warning' | 'info' | 'error'
+  size?: IconSize
+  showLabel?: boolean 
+}) => {
+  const statusConfig = {
+    success: {
+      icon: faCheckCircle,
+      color: 'success' as IconColor,
+      label: '成功'
+    },
+    warning: {
+      icon: faExclamationTriangle,
+      color: 'warning' as IconColor,
+      label: '警告'
+    },
+    info: {
+      icon: faInfoCircle,
+      color: 'primary' as IconColor,
+      label: '資訊'
+    },
+    error: {
+      icon: faTimesCircle,
+      color: 'danger' as IconColor,
+      label: '錯誤'
+    }
+  }
+
+  const config = statusConfig[status]
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <FunctionalIcon
+        icon={config.icon}
+        color={config.color}
+        size={size}
+        label={config.label}
+      />
+      {showLabel && (
+        <span className="text-sm font-medium">{config.label}</span>
+      )}
+    </span>
+  )
+}
+```
+
+### 載入圖示
+
+```tsx
+import { faSpinner } from '@fortawesome/free-solid-svg-icons'
+
+export const LoadingIcon = ({ 
+  size = 'sm',
+  text = '載入中...'
+}: {
+  size?: IconSize
+  text?: string
+}) => (
+  <span className="inline-flex items-center gap-2">
+    <FunctionalIcon
+      icon={faSpinner}
+      spin
+      size={size}
+      color="primary"
+      label={text}
+    />
+    <span className="text-sm text-gray-600 dark:text-gray-400">
+      {text}
+    </span>
+  </span>
+)
+```
+
+### 動作圖示
+
+```tsx
+import { 
+  faEdit, 
+  faTrash, 
+  faEye, 
+  faDownload,
+  faShare 
+} from '@fortawesome/free-solid-svg-icons'
+
+interface ActionIconProps {
+  action: 'edit' | 'delete' | 'view' | 'download' | 'share'
+  onClick?: () => void
+  disabled?: boolean
+  size?: IconSize
+}
+
+export const ActionIcon = ({ 
+  action, 
+  onClick, 
+  disabled = false,
+  size = 'sm' 
+}: ActionIconProps) => {
+  const actionConfig = {
+    edit: { icon: faEdit, label: '編輯', color: 'primary' as IconColor },
+    delete: { icon: faTrash, label: '刪除', color: 'danger' as IconColor },
+    view: { icon: faEye, label: '檢視', color: 'muted' as IconColor },
+    download: { icon: faDownload, label: '下載', color: 'success' as IconColor },
+    share: { icon: faShare, label: '分享', color: 'secondary' as IconColor }
+  }
+
+  const config = actionConfig[action]
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
+        disabled 
+          ? 'cursor-not-allowed opacity-50'
+          : 'hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-blue-500'
+      )}
+      aria-label={config.label}
+      title={config.label}
+    >
+      <Icon
+        icon={config.icon}
+        color={disabled ? 'muted' : config.color}
+        size={size}
+        aria-hidden
+      />
+    </button>
+  )
+}
+```
+
+## 使用範例
+
+### 導航選單
+
+```tsx
+import { 
+  faHome, 
+  faUser, 
+  faCog, 
+  faChartBar,
+  faSignOutAlt 
+} from '@fortawesome/free-solid-svg-icons'
+
+const navigationItems = [
+  { icon: faHome, label: '首頁', href: '/' },
+  { icon: faChartBar, label: '分析', href: '/analytics' },
+  { icon: faUser, label: '用戶', href: '/users' },
+  { icon: faCog, label: '設定', href: '/settings' }
+]
+
+export const Navigation = () => (
+  <nav className="space-y-2">
+    {navigationItems.map((item) => (
+      <a
+        key={item.href}
+        href={item.href}
+        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        <DecorativeIcon
+          icon={item.icon}
+          size="sm"
+          color="primary"
+        />
+        <span>{item.label}</span>
+      </a>
+    ))}
+    
+    <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full">
+      <DecorativeIcon
+        icon={faSignOutAlt}
+        size="sm"
+        color="danger"
+      />
+      <span>登出</span>
+    </button>
+  </nav>
+)
+```
+
+### 卡片標題
+
+```tsx
+import { faRocket } from '@fortawesome/free-solid-svg-icons'
+
+export const FeatureCard = ({ 
+  title, 
+  description, 
+  icon 
+}: {
+  title: string
+  description: string
+  icon: IconProp
+}) => (
+  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg">
+        <DecorativeIcon
+          icon={icon}
+          size="lg"
+          color="primary"
+        />
+      </div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+    </div>
+    <p className="text-gray-600 dark:text-gray-400">{description}</p>
+  </div>
+)
+```
+
+### 表單欄位
+
+```tsx
+import { faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons'
+
+export const FormField = ({ 
+  label, 
+  error, 
+  success 
+}: {
+  label: string
+  error?: string
+  success?: boolean
+}) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium">{label}</label>
+    <div className="relative">
+      <input
+        className={cn(
+          'w-full px-3 py-2 border rounded-lg',
+          error && 'border-red-500',
+          success && 'border-green-500'
+        )}
+      />
+      
+      {/* 狀態圖示 */}
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+        {error && (
+          <FunctionalIcon
+            icon={faExclamationCircle}
+            color="danger"
+            label="有錯誤"
+          />
+        )}
+        {success && (
+          <FunctionalIcon
+            icon={faCheckCircle}
+            color="success"
+            label="驗證成功"
+          />
+        )}
+      </div>
+    </div>
+    
+    {error && (
+      <p className="text-sm text-red-600 flex items-center gap-2">
+        <DecorativeIcon
+          icon={faExclamationCircle}
+          size="xs"
+          color="danger"
+        />
+        {error}
+      </p>
+    )}
+  </div>
+)
+```
+
+## 無障礙最佳實務
+
+### 1. 正確使用 ARIA 屬性
+
+```tsx
+// ✅ 裝飾性圖示
+<DecorativeIcon icon={faHeart} aria-hidden />
+
+// ✅ 功能性圖示
+<FunctionalIcon icon={faSearch} label="搜尋" />
+
+// ✅ 按鈕中的圖示
+<button aria-label="關閉對話框">
+  <DecorativeIcon icon={faTimes} />
+</button>
+```
+
+### 2. 提供替代文字
+
+```tsx
+// 圖示按鈕
+export const IconButton = ({ 
+  icon, 
+  label, 
+  onClick 
+}: {
+  icon: IconProp
+  label: string
+  onClick: () => void
+}) => (
+  <button
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+    className="p-2 rounded-lg hover:bg-gray-100"
+  >
+    <DecorativeIcon icon={icon} />
+  </button>
+)
+```
+
+### 3. 確保對比度
+
+```tsx
+// 主題感知的圖示顏色
+export const ThemedIcon = ({ icon }: { icon: IconProp }) => {
+  const isDark = useTheme() === 'dark'
+  
+  return (
+    <Icon
+      icon={icon}
+      className={cn(
+        isDark ? 'text-gray-300' : 'text-gray-700',
+        'hover:opacity-75'
+      )}
+      aria-hidden
+    />
+  )
+}
+```
+
+Font Awesome 圖示系統為應用提供了豐富的視覺語言，通過正確的實作可以大幅提升用戶體驗。記住要始終考慮無障礙性，確保所有用戶都能理解和使用圖示傳達的資訊。
