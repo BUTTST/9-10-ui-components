@@ -1,6 +1,9 @@
 import { ReactNode } from 'react'
 import { ContentItem, PreviewType, ChartType, Theme, Density } from './content'
 
+// Re-export types that components need
+export type { Density, ChartType, Theme, PreviewType } from './content'
+
 // 通用元件 Props
 export interface BaseProps {
   className?: string

@@ -19,8 +19,8 @@ const nextConfig = {
     unoptimized: true
   },
   // GitHub Pages uses a subdirectory
-  basePath: process.env.NODE_ENV === 'production' ? '/design-to-code-hub' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/design-to-code-hub/' : '',
+  basePath: process.env.NODE_ENV === 'production' ? '/9-10-ui-components' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/9-10-ui-components/' : '',
 }
 
 module.exports = withMDX(nextConfig)

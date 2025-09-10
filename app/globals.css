@@ -243,6 +243,17 @@ code, pre, .font-mono {
   }
 }
 
+/* Toast 變數 */
+:root {
+  --toast-bg: #ffffff;
+  --toast-color: #111827;
+}
+
+.dark {
+  --toast-bg: #1f2937;
+  --toast-color: #f9fafb;
+}
+
 /* 印刷樣式 */
 @media print {
   .no-print {

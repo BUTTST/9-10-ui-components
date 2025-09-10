@@ -101,7 +101,10 @@ export default function PreviewPane({
     useEffect(() => {
       if (previewRef.current && type === 'mermaid') {
         previewRef.current.innerHTML = content
-        mermaid.init(undefined, previewRef.current.querySelector('.mermaid'))
+        const element = previewRef.current.querySelector('.mermaid')
+        if (element) {
+          mermaid.init(undefined, element as HTMLElement)
+        }
       }
     }, [content])
 
