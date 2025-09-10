@@ -1,0 +1,756 @@
+---
+title: "Chart.js 基礎圖表實作"
+description: "使用 react-chartjs-2 建立響應式圖表，支援深淺色主題自動切換與資料更新動畫"
+domain: "frontend"
+tech: ["react", "chartjs", "typescript", "tailwind"]
+intent: ["資料視覺化"]
+category: "chart"
+tags: ["圖表", "資料視覺化", "響應式", "主題"]
+updated: "2024-01-15"
+design_intent:
+  goal: "建立可重用的圖表元件，支援多種圖表類型和主題切換"
+  constraints: ["必須響應式", "要支援深淺色主題", "需要載入動畫"]
+  variations: ["折線圖", "長條圖", "圓餅圖", "甜甜圈圖"]
+react_patterns: ["custom hooks", "context for theme", "memo optimization", "ref forwarding"]
+tailwind_tokens:
+  colors: "從 Tailwind 主題讀取顏色"
+  responsive: "aspect-ratio, w-full h-full"
+next_features: ["dynamic imports", "client components", "theme detection"]
+ts_types: ["ChartProps", "ChartData", "ChartOptions", "ThemeColors"]
+ai_prompt: |
+  請幫我建立一個現代化的 Chart.js 圖表系統，要求如下：
+
+  技術規格：
+  - React + Chart.js + react-chartjs-2
+  - TypeScript 嚴格型別
+  - 支援深淺色主題自動切換
+  - Tailwind CSS 顏色整合
+  - 響應式設計
+
+  圖表需求：
+  1. 折線圖（Line Chart）
+  2. 長條圖（Bar Chart）
+  3. 圓餅圖（Pie Chart）
+  4. 甜甜圈圖（Doughnut Chart）
+
+  功能需求：
+  1. 主題色彩自動切換
+  2. 響應式尺寸調整
+  3. 載入動畫效果
+  4. 資料更新動畫
+  5. 圖例與標籤自訂
+
+  主題需求：
+  - 從 Tailwind 設定讀取顏色
+  - 深淺色模式自動切換
+  - 網格線顏色適應
+  - 文字顏色適應
+
+  請提供完整的圖表系統，包含型別定義、主題處理和使用範例。
+links:
+  - label: "Chart.js Documentation"
+    url: "https://www.chartjs.org/docs/latest/"
+  - label: "react-chartjs-2 Guide"
+    url: "https://react-chartjs-2.js.org/"
+---
+
+# Chart.js 基礎圖表實作
+
+資料視覺化是現代 Web 應用的重要組成部分。Chart.js 是一個強大且靈活的圖表庫，配合 react-chartjs-2 可以在 React 應用中輕鬆建立各種圖表。
+
+## 基礎設定
+
+### 安裝依賴
+
+```bash
+npm install chart.js react-chartjs-2
+```
+
+### TypeScript 型別定義
+
+```typescript
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartOptions,
+  ChartData
+} from 'chart.js'
+
+// 註冊必要的 Chart.js 元件
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+)
+
+export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut'
+
+export interface BaseChartProps {
+  title?: string
+  width?: number
+  height?: number
+  responsive?: boolean
+  maintainAspectRatio?: boolean
+  className?: string
+  theme?: 'light' | 'dark' | 'auto'
+}
+
+export interface LineChartProps extends BaseChartProps {
+  data: ChartData<'line'>
+  options?: ChartOptions<'line'>
+}
+
+export interface BarChartProps extends BaseChartProps {
+  data: ChartData<'bar'>
+  options?: ChartOptions<'bar'>
+}
+
+export interface PieChartProps extends BaseChartProps {
+  data: ChartData<'pie'>
+  options?: ChartOptions<'pie'>
+}
+```
+
+### 主題色彩系統
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import resolveConfig from 'tailwindcss/resolveConfig'
+import tailwindConfig from '../../../tailwind.config.js'
+
+const fullConfig = resolveConfig(tailwindConfig)
+
+export interface ThemeColors {
+  primary: string
+  secondary: string
+  success: string
+  warning: string
+  danger: string
+  info: string
+  background: string
+  surface: string
+  text: string
+  textSecondary: string
+  border: string
+  grid: string
+}
+
+export const useChartTheme = () => {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }
+
+    checkTheme()
+    
+    // 監聽主題變化
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const getThemeColors = (): ThemeColors => {
+    const colors = fullConfig.theme.colors
+
+    if (isDark) {
+      return {
+        primary: colors.blue[500],
+        secondary: colors.purple[500],
+        success: colors.green[500],
+        warning: colors.yellow[500],
+        danger: colors.red[500],
+        info: colors.cyan[500],
+        background: colors.gray[900],
+        surface: colors.gray[800],
+        text: colors.gray[100],
+        textSecondary: colors.gray[400],
+        border: colors.gray[700],
+        grid: colors.gray[600]
+      }
+    }
+
+    return {
+      primary: colors.blue[600],
+      secondary: colors.purple[600],
+      success: colors.green[600],
+      warning: colors.yellow[600],
+      danger: colors.red[600],
+      info: colors.cyan[600],
+      background: colors.white,
+      surface: colors.gray[50],
+      text: colors.gray[900],
+      textSecondary: colors.gray[600],
+      border: colors.gray[200],
+      grid: colors.gray[300]
+    }
+  }
+
+  const getDatasetColors = (count: number = 1) => {
+    const baseColors = [
+      colors.blue[500],
+      colors.purple[500],
+      colors.green[500],
+      colors.yellow[500],
+      colors.red[500],
+      colors.cyan[500],
+      colors.pink[500],
+      colors.indigo[500]
+    ]
+
+    return Array.from({ length: count }, (_, index) => ({
+      backgroundColor: baseColors[index % baseColors.length] + (isDark ? '80' : '20'),
+      borderColor: baseColors[index % baseColors.length],
+      hoverBackgroundColor: baseColors[index % baseColors.length] + (isDark ? 'A0' : '40'),
+      hoverBorderColor: baseColors[index % baseColors.length]
+    }))
+  }
+
+  return {
+    isDark,
+    colors: getThemeColors(),
+    getDatasetColors
+  }
+}
+```
+
+### 基礎圖表元件
+
+```tsx
+'use client'
+
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2'
+import { motion } from 'framer-motion'
+import { useChartTheme } from './useChartTheme'
+
+// 折線圖元件
+export const LineChart = ({
+  data,
+  options,
+  title,
+  className,
+  ...props
+}: LineChartProps) => {
+  const { colors, isDark } = useChartTheme()
+
+  const defaultOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: !!title,
+        text: title,
+        color: colors.text,
+        font: {
+          size: 16,
+          weight: 'bold'
+        }
+      },
+      legend: {
+        labels: {
+          color: colors.text,
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      tooltip: {
+        backgroundColor: colors.surface,
+        titleColor: colors.text,
+        bodyColor: colors.text,
+        borderColor: colors.border,
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: colors.textSecondary
+        },
+        grid: {
+          color: colors.grid,
+          lineWidth: 1
+        },
+        border: {
+          color: colors.border
+        }
+      },
+      y: {
+        ticks: {
+          color: colors.textSecondary
+        },
+        grid: {
+          color: colors.grid,
+          lineWidth: 1
+        },
+        border: {
+          color: colors.border
+        }
+      }
+    },
+    elements: {
+      line: {
+        tension: 0.4
+      },
+      point: {
+        radius: 4,
+        hoverRadius: 6
+      }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
+    }
+  }
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className={'w-full ' + (className || '')}
+    >
+      <Line data={data} options={mergedOptions} {...props} />
+    </motion.div>
+  )
+}
+
+// 長條圖元件
+export const BarChart = ({
+  data,
+  options,
+  title,
+  className,
+  ...props
+}: BarChartProps) => {
+  const { colors } = useChartTheme()
+
+  const defaultOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: !!title,
+        text: title,
+        color: colors.text,
+        font: {
+          size: 16,
+          weight: 'bold'
+        }
+      },
+      legend: {
+        labels: {
+          color: colors.text,
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      tooltip: {
+        backgroundColor: colors.surface,
+        titleColor: colors.text,
+        bodyColor: colors.text,
+        borderColor: colors.border,
+        borderWidth: 1,
+        cornerRadius: 8
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: colors.textSecondary
+        },
+        grid: {
+          color: colors.grid,
+          lineWidth: 1
+        },
+        border: {
+          color: colors.border
+        }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: colors.textSecondary
+        },
+        grid: {
+          color: colors.grid,
+          lineWidth: 1
+        },
+        border: {
+          color: colors.border
+        }
+      }
+    },
+    animation: {
+      duration: 1200,
+      easing: 'easeOutBounce'
+    }
+  }
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.2 }}
+      className={'w-full ' + (className || '')}
+    >
+      <Bar data={data} options={mergedOptions} {...props} />
+    </motion.div>
+  )
+}
+
+// 圓餅圖元件
+export const PieChart = ({
+  data,
+  options,
+  title,
+  className,
+  ...props
+}: PieChartProps) => {
+  const { colors } = useChartTheme()
+
+  const defaultOptions: ChartOptions<'pie'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: !!title,
+        text: title,
+        color: colors.text,
+        font: {
+          size: 16,
+          weight: 'bold'
+        }
+      },
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: colors.text,
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      tooltip: {
+        backgroundColor: colors.surface,
+        titleColor: colors.text,
+        bodyColor: colors.text,
+        borderColor: colors.border,
+        borderWidth: 1,
+        cornerRadius: 8,
+        callbacks: {
+          label: (context) => {
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
+            const percentage = ((context.raw as number / total) * 100).toFixed(1)
+            return context.label + ': ' + percentage + '%'
+          }
+        }
+      }
+    },
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1500
+    }
+  }
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, rotate: -180 }}
+      animate={{ opacity: 1, rotate: 0 }}
+      transition={{ duration: 0.8, type: 'spring' }}
+      className={'w-full ' + (className || '')}
+    >
+      <Pie data={data} options={mergedOptions} {...props} />
+    </motion.div>
+  )
+}
+```
+
+## 使用範例
+
+### 銷售數據儀表板
+
+```tsx
+'use client'
+
+import { LineChart, BarChart, PieChart } from '@/components/Charts'
+import { useChartTheme } from '@/hooks/useChartTheme'
+
+export default function SalesDashboard() {
+  const { getDatasetColors } = useChartTheme()
+
+  // 月銷售趨勢數據
+  const salesTrendData = {
+    labels: ['一月', '二月', '三月', '四月', '五月', '六月'],
+    datasets: [
+      {
+        label: '銷售額 (萬元)',
+        data: [65, 59, 80, 81, 56, 95],
+        ...getDatasetColors(1)[0],
+        fill: true
+      }
+    ]
+  }
+
+  // 產品銷量對比數據
+  const productSalesData = {
+    labels: ['產品 A', '產品 B', '產品 C', '產品 D'],
+    datasets: [
+      {
+        label: '2023 年',
+        data: [12, 19, 3, 5],
+        ...getDatasetColors(1)[0]
+      },
+      {
+        label: '2024 年',
+        data: [15, 25, 8, 12],
+        ...getDatasetColors(2)[1]
+      }
+    ]
+  }
+
+  // 市場佔有率數據
+  const marketShareData = {
+    labels: ['我們的產品', '競爭對手 A', '競爭對手 B', '其他'],
+    datasets: [
+      {
+        data: [35, 25, 20, 20],
+        backgroundColor: getDatasetColors(4).map(color => color.backgroundColor),
+        borderColor: getDatasetColors(4).map(color => color.borderColor),
+        borderWidth: 2
+      }
+    ]
+  }
+
+  return (
+    <div className="p-6 space-y-8">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        銷售數據儀表板
+      </h1>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* 銷售趨勢 */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="h-80">
+            <LineChart
+              title="月銷售趨勢"
+              data={salesTrendData}
+              options={{
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => value + ' 萬'
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 產品銷量對比 */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="h-80">
+            <BarChart
+              title="產品銷量對比"
+              data={productSalesData}
+              options={{
+                plugins: {
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => {
+                        return context.dataset.label + ': ' + context.raw + ' 千件'
+                      }
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 市場佔有率 */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm lg:col-span-2">
+          <div className="max-w-md mx-auto h-80">
+            <PieChart
+              title="市場佔有率分析"
+              data={marketShareData}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+### 即時數據更新
+
+```tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { LineChart } from '@/components/Charts'
+
+export default function RealTimeChart() {
+  const [data, setData] = useState({
+    labels: [],
+    datasets: [{
+      label: '即時數據',
+      data: [],
+      borderColor: 'rgb(59, 130, 246)',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      fill: true
+    }]
+  })
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date()
+      const timeLabel = now.toLocaleTimeString()
+      const newValue = Math.floor(Math.random() * 100)
+
+      setData(prevData => {
+        const newLabels = [...prevData.labels, timeLabel].slice(-20) // 保持最近 20 個數據點
+        const newDataPoints = [...prevData.datasets[0].data, newValue].slice(-20)
+
+        return {
+          labels: newLabels,
+          datasets: [{
+            ...prevData.datasets[0],
+            data: newDataPoints
+          }]
+        }
+      })
+    }, 2000) // 每 2 秒更新一次
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+      <div className="h-96">
+        <LineChart
+          title="即時數據監控"
+          data={data}
+          options={{
+            animation: {
+              duration: 500 // 縮短動畫時間以適應即時更新
+            },
+            scales: {
+              x: {
+                display: false // 隱藏 X 軸標籤以節省空間
+              }
+            }
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+```
+
+## 常見陷阱與最佳實務
+
+### 1. 效能優化
+```tsx
+// 使用 React.memo 避免不必要的重新渲染
+export const OptimizedChart = React.memo(({ data, options }) => {
+  return <LineChart data={data} options={options} />
+}, (prevProps, nextProps) => {
+  // 自定義比較邏輯
+  return JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data)
+})
+```
+
+### 2. 響應式處理
+```tsx
+const useResponsiveChart = () => {
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        })
+      }
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
+
+  return { containerRef, dimensions }
+}
+```
+
+### 3. 無障礙支援
+```tsx
+// 為圖表添加無障礙標籤
+<div role="img" aria-label="銷售趨勢圖表，顯示過去六個月的銷售數據">
+  <LineChart data={salesData} />
+  
+  {/* 提供資料表格作為替代內容 */}
+  <table className="sr-only">
+    <caption>銷售趨勢數據表格</caption>
+    <thead>
+      <tr>
+        <th>月份</th>
+        <th>銷售額</th>
+      </tr>
+    </thead>
+    <tbody>
+      {salesData.labels.map((label, index) => (
+        <tr key={label}>
+          <td>{label}</td>
+          <td>{salesData.datasets[0].data[index]}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+Chart.js 提供了強大的資料視覺化能力，配合適當的主題管理和響應式設計，可以建立出既美觀又實用的圖表系統。記住要考慮無障礙性和效能優化，讓所有用戶都能獲得良好的體驗。

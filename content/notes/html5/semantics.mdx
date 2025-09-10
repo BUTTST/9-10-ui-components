@@ -1,0 +1,584 @@
+---
+title: "HTML5 語意化標籤"
+description: "HTML5 語意化元素的正確使用，包含 header、nav、main、section、article、aside、footer 等標籤"
+domain: "notes"
+tech: ["html5"]
+intent: []
+category: "html5"
+tags: ["語意化", "SEO", "無障礙", "結構"]
+updated: "2024-01-15"
+design_intent:
+  goal: "建立語意清晰、SEO 友善的 HTML 結構"
+  constraints: ["必須符合 HTML5 規範", "要支援螢幕閱讀器", "需要良好的 SEO"]
+  variations: ["文章頁面", "列表頁面", "儀表板", "登入頁面"]
+react_patterns: ["semantic JSX", "component composition", "accessibility props"]
+tailwind_tokens: {}
+next_features: ["metadata API", "structured data", "SEO optimization"]
+ts_types: ["HTMLElement interfaces", "ARIA attributes", "semantic roles"]
+ai_prompt: |
+  請幫我建立一個 HTML5 語意化的頁面結構，要求如下：
+
+  技術規格：
+  - 完整的 HTML5 語意化標籤
+  - 正確的 ARIA landmark 角色
+  - SEO 優化的結構
+  - 螢幕閱讀器友善
+
+  結構需求：
+  1. 頁面標題和導航
+  2. 主要內容區域
+  3. 側邊欄內容
+  4. 頁尾資訊
+
+  語意需求：
+  - 使用適當的 heading 層級
+  - 正確的 section 和 article 區分
+  - landmark 角色標記
+  - 跳轉連結支援
+
+  SEO 需求：
+  - 結構化資料標記
+  - 適當的 meta 標籤
+  - 語意化的內容組織
+
+  請提供完整的 HTML5 語意化範例和最佳實務指南。
+links:
+  - label: "HTML5 Semantic Elements"
+    url: "https://developer.mozilla.org/en-US/docs/Web/HTML/Element"
+  - label: "ARIA Landmarks"
+    url: "https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/"
+---
+
+# HTML5 語意化標籤
+
+HTML5 引入了許多語意化標籤，讓開發者能夠建立更有意義、更易於理解的網頁結構。正確使用這些標籤不僅有助於 SEO，也能提升無障礙體驗。
+
+## 核心語意化元素
+
+### 文檔結構元素
+
+```html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>頁面標題 - 網站名稱</title>
+  <meta name="description" content="頁面描述，用於 SEO">
+</head>
+<body>
+  <!-- 跳轉連結 -->
+  <a href="#main-content" class="skip-link">跳至主要內容</a>
+  
+  <!-- 頁面標題區 -->
+  <header role="banner">
+    <h1>網站標題</h1>
+    <p>網站標語或簡短描述</p>
+  </header>
+
+  <!-- 主要導航 -->
+  <nav role="navigation" aria-label="主要導航">
+    <ul>
+      <li><a href="/" aria-current="page">首頁</a></li>
+      <li><a href="/about">關於我們</a></li>
+      <li><a href="/services">服務項目</a></li>
+      <li><a href="/contact">聯絡我們</a></li>
+    </ul>
+  </nav>
+
+  <!-- 主要內容區 -->
+  <main id="main-content" role="main">
+    <!-- 文章內容 -->
+    <article>
+      <header>
+        <h1>文章標題</h1>
+        <p>
+          <time datetime="2024-01-15">2024年1月15日</time>
+          由 <span>作者名稱</span> 發表
+        </p>
+      </header>
+      
+      <section>
+        <h2>第一個段落標題</h2>
+        <p>段落內容...</p>
+      </section>
+      
+      <section>
+        <h2>第二個段落標題</h2>
+        <p>段落內容...</p>
+      </section>
+      
+      <footer>
+        <p>標籤：
+          <a href="/tags/html5" rel="tag">HTML5</a>
+          <a href="/tags/semantic" rel="tag">語意化</a>
+        </p>
+      </footer>
+    </article>
+  </main>
+
+  <!-- 側邊欄 -->
+  <aside role="complementary" aria-label="相關資訊">
+    <section>
+      <h2>相關文章</h2>
+      <ul>
+        <li><a href="/article1">相關文章一</a></li>
+        <li><a href="/article2">相關文章二</a></li>
+      </ul>
+    </section>
+    
+    <section>
+      <h2>廣告</h2>
+      <div aria-label="廣告內容">
+        <!-- 廣告內容 -->
+      </div>
+    </section>
+  </aside>
+
+  <!-- 頁尾 -->
+  <footer role="contentinfo">
+    <section>
+      <h2>聯絡資訊</h2>
+      <address>
+        <p>電話：<a href="tel:+886-2-1234-5678">02-1234-5678</a></p>
+        <p>Email：<a href="mailto:info@example.com">info@example.com</a></p>
+      </address>
+    </section>
+    
+    <section>
+      <h2>版權資訊</h2>
+      <p>&copy; 2024 網站名稱. 保留所有權利.</p>
+    </section>
+  </footer>
+</body>
+</html>
+```
+
+## 標籤使用指南
+
+### Header 元素
+
+```html
+<!-- ✅ 正確：頁面標題 -->
+<header role="banner">
+  <h1>網站名稱</h1>
+  <p>網站標語</p>
+</header>
+
+<!-- ✅ 正確：文章標題 -->
+<article>
+  <header>
+    <h1>文章標題</h1>
+    <p>發表資訊</p>
+  </header>
+</article>
+
+<!-- ❌ 錯誤：不要用於一般內容分組 -->
+<header>
+  <p>這只是一般段落</p>
+</header>
+```
+
+### Nav 元素
+
+```html
+<!-- ✅ 正確：主要導航 -->
+<nav role="navigation" aria-label="主要導航">
+  <ul>
+    <li><a href="/">首頁</a></li>
+    <li><a href="/about">關於</a></li>
+  </ul>
+</nav>
+
+<!-- ✅ 正確：麵包屑導航 -->
+<nav aria-label="麵包屑">
+  <ol>
+    <li><a href="/">首頁</a></li>
+    <li><a href="/category">分類</a></li>
+    <li aria-current="page">當前頁面</li>
+  </ol>
+</nav>
+
+<!-- ✅ 正確：分頁導航 -->
+<nav aria-label="分頁導航">
+  <a href="/page/1" rel="prev">上一頁</a>
+  <a href="/page/3" rel="next">下一頁</a>
+</nav>
+
+<!-- ❌ 錯誤：不要用於非導航連結 -->
+<nav>
+  <a href="mailto:contact@example.com">聯絡我們</a>
+</nav>
+```
+
+### Main 元素
+
+```html
+<!-- ✅ 正確：每頁只能有一個 main -->
+<main id="main-content" role="main">
+  <h1>頁面主要標題</h1>
+  <p>主要內容...</p>
+</main>
+
+<!-- ❌ 錯誤：多個 main 元素 -->
+<main>內容一</main>
+<main>內容二</main>
+
+<!-- ❌ 錯誤：main 在 header/nav/footer 內 -->
+<header>
+  <main>錯誤位置</main>
+</header>
+```
+
+### Section vs Article
+
+```html
+<!-- ✅ Article：獨立、完整的內容 -->
+<article>
+  <h1>如何學習 HTML5</h1>
+  <p>這是一篇完整的教學文章...</p>
+</article>
+
+<!-- ✅ Section：主題相關的內容分組 -->
+<section>
+  <h2>學習資源</h2>
+  <ul>
+    <li>線上課程</li>
+    <li>參考書籍</li>
+  </ul>
+</section>
+
+<!-- ✅ Article 內的 Section -->
+<article>
+  <h1>年度報告</h1>
+  
+  <section>
+    <h2>第一季業績</h2>
+    <p>業績內容...</p>
+  </section>
+  
+  <section>
+    <h2>第二季業績</h2>
+    <p>業績內容...</p>
+  </section>
+</article>
+
+<!-- ✅ Section 內的 Article -->
+<section>
+  <h1>最新消息</h1>
+  
+  <article>
+    <h2>新產品發布</h2>
+    <p>產品資訊...</p>
+  </article>
+  
+  <article>
+    <h2>公司活動</h2>
+    <p>活動資訊...</p>
+  </article>
+</section>
+```
+
+### Aside 元素
+
+```html
+<!-- ✅ 正確：側邊欄內容 -->
+<aside role="complementary" aria-label="相關資訊">
+  <h2>相關連結</h2>
+  <ul>
+    <li><a href="/related1">相關文章一</a></li>
+    <li><a href="/related2">相關文章二</a></li>
+  </ul>
+</aside>
+
+<!-- ✅ 正確：文章內的補充資訊 -->
+<article>
+  <h1>主要文章</h1>
+  <p>文章內容...</p>
+  
+  <aside>
+    <h3>補充說明</h3>
+    <p>額外的相關資訊...</p>
+  </aside>
+</article>
+
+<!-- ❌ 錯誤：主要內容不應放在 aside -->
+<aside>
+  <h1>主要標題</h1>
+  <p>這是頁面的主要內容</p>
+</aside>
+```
+
+## 標題層級結構
+
+### 正確的標題層級
+
+```html
+<!-- ✅ 正確：邏輯層級結構 -->
+<main>
+  <h1>頁面主標題</h1>
+  
+  <section>
+    <h2>第一個主要段落</h2>
+    
+    <section>
+      <h3>子段落一</h3>
+      <p>內容...</p>
+      
+      <h4>詳細說明</h4>
+      <p>詳細內容...</p>
+    </section>
+    
+    <section>
+      <h3>子段落二</h3>
+      <p>內容...</p>
+    </section>
+  </section>
+  
+  <section>
+    <h2>第二個主要段落</h2>
+    <p>內容...</p>
+  </section>
+</main>
+
+<!-- ❌ 錯誤：跳過層級 -->
+<h1>主標題</h1>
+<h3>跳過了 h2</h3>
+
+<!-- ❌ 錯誤：用於樣式而非結構 -->
+<h3>這應該是 h2 但我想要小一點的字</h3>
+```
+
+## 表單語意化
+
+### 完整的表單結構
+
+```html
+<form>
+  <fieldset>
+    <legend>個人資訊</legend>
+    
+    <div>
+      <label for="name">姓名 <abbr title="必填">*</abbr></label>
+      <input 
+        type="text" 
+        id="name" 
+        name="name" 
+        required 
+        aria-describedby="name-help"
+      >
+      <div id="name-help">請輸入您的真實姓名</div>
+    </div>
+    
+    <div>
+      <label for="email">Email <abbr title="必填">*</abbr></label>
+      <input 
+        type="email" 
+        id="email" 
+        name="email" 
+        required
+        aria-describedby="email-error"
+        aria-invalid="true"
+      >
+      <div id="email-error" role="alert">
+        請輸入有效的 Email 地址
+      </div>
+    </div>
+  </fieldset>
+  
+  <fieldset>
+    <legend>聯絡偏好</legend>
+    
+    <div role="radiogroup" aria-labelledby="contact-preference">
+      <div id="contact-preference">偏好聯絡方式：</div>
+      
+      <label>
+        <input type="radio" name="contact" value="email" checked>
+        Email
+      </label>
+      
+      <label>
+        <input type="radio" name="contact" value="phone">
+        電話
+      </label>
+    </div>
+  </fieldset>
+  
+  <button type="submit">提交表單</button>
+</form>
+```
+
+## 列表語意化
+
+### 不同類型的列表
+
+```html
+<!-- 無序列表：項目順序不重要 -->
+<ul>
+  <li>蘋果</li>
+  <li>香蕉</li>
+  <li>橘子</li>
+</ul>
+
+<!-- 有序列表：項目順序重要 -->
+<ol>
+  <li>註冊帳號</li>
+  <li>驗證 Email</li>
+  <li>完成個人資料</li>
+</ol>
+
+<!-- 描述列表：名詞-定義配對 -->
+<dl>
+  <dt>HTML</dt>
+  <dd>超文本標記語言</dd>
+  
+  <dt>CSS</dt>
+  <dd>階層樣式表</dd>
+  
+  <dt>JavaScript</dt>
+  <dd>程式設計語言</dd>
+</dl>
+
+<!-- 導航列表 -->
+<nav>
+  <ul>
+    <li><a href="/" aria-current="page">首頁</a></li>
+    <li><a href="/about">關於</a></li>
+    <li><a href="/contact">聯絡</a></li>
+  </ul>
+</nav>
+```
+
+## 無障礙增強
+
+### ARIA Landmarks
+
+```html
+<!-- 明確的 landmark 角色 -->
+<header role="banner" aria-label="網站標題">
+  <h1>網站名稱</h1>
+</header>
+
+<nav role="navigation" aria-label="主要導航">
+  <!-- 導航內容 -->
+</nav>
+
+<main role="main" aria-label="主要內容">
+  <!-- 主要內容 -->
+</main>
+
+<aside role="complementary" aria-label="側邊欄">
+  <!-- 側邊內容 -->
+</aside>
+
+<footer role="contentinfo" aria-label="頁尾資訊">
+  <!-- 頁尾內容 -->
+</footer>
+
+<!-- 搜尋區域 -->
+<div role="search" aria-label="網站搜尋">
+  <form>
+    <label for="search">搜尋</label>
+    <input type="search" id="search" name="q">
+    <button type="submit">搜尋</button>
+  </form>
+</div>
+```
+
+### 跳轉連結
+
+```html
+<!-- 頁面頂部的跳轉連結 -->
+<a href="#main-content" class="skip-link">跳至主要內容</a>
+<a href="#navigation" class="skip-link">跳至導航</a>
+<a href="#footer" class="skip-link">跳至頁尾</a>
+
+<style>
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+</style>
+```
+
+## SEO 優化
+
+### 結構化資料
+
+```html
+<!-- JSON-LD 結構化資料 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "HTML5 語意化標籤指南",
+  "author": {
+    "@type": "Person",
+    "name": "作者姓名"
+  },
+  "datePublished": "2024-01-15",
+  "dateModified": "2024-01-15",
+  "description": "完整的 HTML5 語意化標籤使用指南"
+}
+</script>
+
+<!-- 微資料標記 -->
+<article itemscope itemtype="https://schema.org/Article">
+  <header>
+    <h1 itemprop="headline">文章標題</h1>
+    <p>
+      由 <span itemprop="author">作者名稱</span> 於
+      <time itemprop="datePublished" datetime="2024-01-15">
+        2024年1月15日
+      </time> 發表
+    </p>
+  </header>
+  
+  <div itemprop="articleBody">
+    <p>文章內容...</p>
+  </div>
+</article>
+```
+
+### Meta 標籤優化
+
+```html
+<head>
+  <!-- 基本 SEO -->
+  <title>頁面標題 - 網站名稱</title>
+  <meta name="description" content="頁面描述，150-160 字符">
+  <meta name="keywords" content="關鍵字1, 關鍵字2, 關鍵字3">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="頁面標題">
+  <meta property="og:description" content="頁面描述">
+  <meta property="og:image" content="https://example.com/image.jpg">
+  <meta property="og:url" content="https://example.com/page">
+  <meta property="og:type" content="article">
+  
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="頁面標題">
+  <meta name="twitter:description" content="頁面描述">
+  <meta name="twitter:image" content="https://example.com/image.jpg">
+  
+  <!-- 語言和地區 -->
+  <html lang="zh-TW">
+  <meta name="language" content="zh-TW">
+  
+  <!-- 移動設備優化 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+```
+
+正確使用 HTML5 語意化標籤不僅能提升網站的可讀性和維護性，還能改善 SEO 排名和無障礙體驗。記住要始終考慮內容的意義和結構，而不是僅僅關注視覺呈現。

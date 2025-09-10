@@ -1,0 +1,581 @@
+---
+title: "卡片元件設計與實作"
+description: "可組合的卡片元件，支援 RWD 網格佈局、鍵盤互動、深淺色主題與 Framer Motion 動畫"
+domain: "frontend"
+tech: ["react", "tailwind", "typescript", "framer-motion"]
+intent: ["卡片", "微互動"]
+category: "ui"
+tags: ["元件", "佈局", "動畫", "響應式", "無障礙"]
+updated: "2024-01-15"
+design_intent:
+  goal: "建立可重用的卡片元件，支援多種變體和互動狀態"
+  constraints: ["必須支援鍵盤導航", "需要深淺色主題", "要有載入和錯誤狀態"]
+  variations: ["基礎卡片", "圖片卡片", "統計卡片", "互動卡片"]
+react_patterns: ["組合模式", "render props", "forwardRef", "children as function"]
+tailwind_tokens: 
+  spacing: "p-6, gap-4, space-y-3"
+  colors: "bg-white dark:bg-gray-800, border-gray-200 dark:border-gray-700"
+  shadows: "shadow-sm hover:shadow-lg, ring-2 ring-blue-500"
+  radius: "rounded-xl, rounded-2xl"
+next_features: ["Image component", "dynamic imports", "client components"]
+ts_types: ["CardProps", "CardVariant", "CardSize", "React.ComponentProps"]
+ai_prompt: |
+  請幫我建立一個現代化的 React 卡片元件，要求如下：
+
+  技術規格：
+  - 使用 TypeScript 嚴格型別
+  - Tailwind CSS 樣式（支援深淺色主題）
+  - Framer Motion 動畫效果
+  - 完整的無障礙支援
+
+  功能需求：
+  1. 基礎卡片結構（header, body, footer 可選）
+  2. 支援多種尺寸：sm, md, lg
+  3. 支援點擊、hover、focus 狀態
+  4. 可選的圖片/圖示區域
+  5. 支援 loading 和 error 狀態
+
+  動畫需求：
+  - 使用 Framer Motion variants
+  - 卡片入場動畫（從下方滑入）
+  - hover 時輕微上升和陰影變化
+  - 點擊時的縮放回饋
+
+  無障礙需求：
+  - 正確的 ARIA 屬性
+  - 鍵盤導航支援
+  - 螢幕閱讀器友善
+  - focus-visible 樣式
+
+  請提供完整的型別定義、元件實作和使用範例。
+links:
+  - label: "React Card Patterns"
+    url: "https://react-patterns.com/card-component"
+  - label: "Tailwind Card Examples"
+    url: "https://tailwindui.com/components/marketing/sections/feature-sections"
+---
+
+# 卡片元件設計與實作
+
+卡片是現代 UI 設計中最常用的元件之一，用於將相關資訊組織在一個視覺容器中。本文將介紹如何建立一個功能完整、可重用的卡片元件。
+
+## 設計理念
+
+卡片元件應該：
+- **模組化**：可組合不同的內容區塊
+- **靈活性**：支援多種佈局和樣式變體
+- **一致性**：維持統一的視覺語言
+- **可及性**：確保所有用戶都能正常使用
+
+## 基礎實作
+
+### TypeScript 型別定義
+
+```typescript
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'outlined' | 'elevated' | 'interactive'
+  size?: 'sm' | 'md' | 'lg'
+  padding?: 'none' | 'sm' | 'md' | 'lg'
+  loading?: boolean
+  error?: string | null
+  onClick?: () => void
+  href?: string
+  children: React.ReactNode
+  className?: string
+}
+
+export interface CardHeaderProps {
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+  className?: string
+}
+
+export interface CardBodyProps {
+  children: React.ReactNode
+  className?: string
+}
+
+export interface CardFooterProps {
+  children: React.ReactNode
+  className?: string
+}
+```
+
+### 主要元件實作
+
+```tsx
+'use client'
+
+import { forwardRef } from 'react'
+import { motion, Variants } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+// 動畫變體
+const cardVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.95
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  },
+  hover: {
+    y: -4,
+    scale: 1.02,
+    transition: {
+      duration: 0.2,
+      ease: 'easeOut'
+    }
+  },
+  tap: {
+    scale: 0.98,
+    transition: {
+      duration: 0.1
+    }
+  }
+}
+
+const Card = forwardRef<HTMLDivElement, CardProps>(({
+  variant = 'default',
+  size = 'md',
+  padding = 'md',
+  loading = false,
+  error = null,
+  onClick,
+  href,
+  className,
+  children,
+  ...props
+}, ref) => {
+  const isInteractive = Boolean(onClick || href)
+  
+  // 基礎樣式
+  const baseStyles = cn(
+    'relative overflow-hidden bg-white dark:bg-gray-800',
+    'border border-gray-200 dark:border-gray-700',
+    'transition-all duration-200',
+    // 變體樣式
+    {
+      'shadow-sm hover:shadow-md': variant === 'default',
+      'border-2 shadow-none': variant === 'outlined',
+      'shadow-lg hover:shadow-xl border-0': variant === 'elevated',
+      'cursor-pointer hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2': 
+        variant === 'interactive' || isInteractive,
+    },
+    // 尺寸樣式
+    {
+      'rounded-lg': size === 'sm',
+      'rounded-xl': size === 'md',
+      'rounded-2xl': size === 'lg',
+    },
+    className
+  )
+
+  // 內邊距樣式
+  const paddingStyles = cn({
+    'p-0': padding === 'none',
+    'p-4': padding === 'sm',
+    'p-6': padding === 'md',
+    'p-8': padding === 'lg',
+  })
+
+  const CardContent = () => (
+    <div className={paddingStyles}>
+      {loading ? (
+        <CardSkeleton />
+      ) : error ? (
+        <CardError message={error} />
+      ) : (
+        children
+      )}
+    </div>
+  )
+
+  if (href) {
+    return (
+      <motion.a
+        ref={ref}
+        href={href}
+        className={baseStyles}
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        whileHover="hover"
+        whileTap="tap"
+        {...props}
+      >
+        <CardContent />
+      </motion.a>
+    )
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      className={baseStyles}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={isInteractive ? "hover" : undefined}
+      whileTap={isInteractive ? "tap" : undefined}
+      onClick={onClick}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (isInteractive && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
+      {...props}
+    >
+      <CardContent />
+    </motion.div>
+  )
+})
+
+Card.displayName = 'Card'
+```
+
+### 子元件實作
+
+```tsx
+// 卡片標題區
+export const CardHeader = ({ title, subtitle, action, className }: CardHeaderProps) => (
+  <div className={cn('flex items-start justify-between', className)}>
+    <div className="min-w-0 flex-1">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
+        {title}
+      </h3>
+      {subtitle && (
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+          {subtitle}
+        </p>
+      )}
+    </div>
+    {action && (
+      <div className="ml-4 flex-shrink-0">
+        {action}
+      </div>
+    )}
+  </div>
+)
+
+// 卡片內容區
+export const CardBody = ({ children, className }: CardBodyProps) => (
+  <div className={cn('mt-4', className)}>
+    {children}
+  </div>
+)
+
+// 卡片底部區
+export const CardFooter = ({ children, className }: CardFooterProps) => (
+  <div className={cn('mt-6 flex items-center justify-between', className)}>
+    {children}
+  </div>
+)
+
+// 載入骨架屏
+const CardSkeleton = () => (
+  <div className="animate-pulse space-y-4">
+    <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-3/4"></div>
+    <div className="h-3 bg-gray-200 rounded dark:bg-gray-700 w-1/2"></div>
+    <div className="space-y-2">
+      <div className="h-3 bg-gray-200 rounded dark:bg-gray-700"></div>
+      <div className="h-3 bg-gray-200 rounded dark:bg-gray-700 w-5/6"></div>
+    </div>
+  </div>
+)
+
+// 錯誤狀態
+const CardError = ({ message }: { message: string }) => (
+  <div className="flex items-center justify-center p-4 text-red-600 dark:text-red-400">
+    <div className="text-center">
+      <div className="text-2xl mb-2">⚠️</div>
+      <p className="text-sm">{message}</p>
+    </div>
+  </div>
+)
+```
+
+## 使用範例
+
+### 基礎用法
+
+```tsx
+import { Card, CardHeader, CardBody, CardFooter } from '@/components/Card'
+
+export default function BasicCardExample() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* 基礎卡片 */}
+      <Card>
+        <CardHeader
+          title="基礎卡片"
+          subtitle="這是一個基礎的卡片範例"
+        />
+        <CardBody>
+          <p className="text-gray-600 dark:text-gray-400">
+            卡片內容可以包含任何元素，如文字、圖片、按鈕等。
+          </p>
+        </CardBody>
+        <CardFooter>
+          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            了解更多
+          </button>
+        </CardFooter>
+      </Card>
+
+      {/* 互動卡片 */}
+      <Card
+        variant="interactive"
+        onClick={() => alert('卡片被點擊了！')}
+      >
+        <CardHeader
+          title="互動卡片"
+          subtitle="點擊我試試看"
+          action={
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              可點擊
+            </span>
+          }
+        />
+        <CardBody>
+          <p className="text-gray-600 dark:text-gray-400">
+            這張卡片支援點擊互動，並且有 hover 和 focus 效果。
+          </p>
+        </CardBody>
+      </Card>
+
+      {/* 連結卡片 */}
+      <Card
+        href="/example"
+        variant="elevated"
+      >
+        <CardHeader
+          title="連結卡片"
+          subtitle="點擊跳轉到其他頁面"
+        />
+        <CardBody>
+          <p className="text-gray-600 dark:text-gray-400">
+            這張卡片會導航到其他頁面。
+          </p>
+        </CardBody>
+      </Card>
+    </div>
+  )
+}
+```
+
+### 進階用法
+
+```tsx
+// 統計卡片
+export const StatsCard = ({ title, value, change, icon }: StatsCardProps) => (
+  <Card variant="elevated" size="lg">
+    <div className="flex items-center">
+      <div className="flex-shrink-0">
+        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg dark:bg-blue-900">
+          {icon}
+        </div>
+      </div>
+      <div className="ml-4 flex-1">
+        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          {title}
+        </h3>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          {value}
+        </p>
+        {change && (
+          <p className={cn(
+            'text-sm font-medium',
+            change > 0 ? 'text-green-600' : 'text-red-600'
+          )}>
+            {change > 0 ? '+' : ''}{change}%
+          </p>
+        )}
+      </div>
+    </div>
+  </Card>
+)
+
+// 圖片卡片
+export const ImageCard = ({ image, title, description, tags }: ImageCardProps) => (
+  <Card padding="none" className="overflow-hidden">
+    <div className="aspect-video bg-gray-200 dark:bg-gray-700">
+      <img
+        src={image}
+        alt={title}
+        className="w-full h-full object-cover"
+      />
+    </div>
+    <div className="p-6">
+      <CardHeader title={title} />
+      <CardBody>
+        <p className="text-gray-600 dark:text-gray-400">
+          {description}
+        </p>
+        {tags && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {tags.map(tag => (
+              <span
+                key={tag}
+                className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </CardBody>
+    </div>
+  </Card>
+)
+```
+
+## 密度設定
+
+支援三種密度設定：
+
+```tsx
+// Compact - 緊湊模式
+<Card size="sm" padding="sm">
+  <div className="space-y-2">
+    <h4 className="text-sm font-medium">緊湊卡片</h4>
+    <p className="text-xs text-gray-600">節省空間的設計</p>
+  </div>
+</Card>
+
+// Comfortable - 舒適模式（預設）
+<Card size="md" padding="md">
+  <CardHeader title="舒適卡片" />
+  <CardBody>
+    <p>平衡的間距設計</p>
+  </CardBody>
+</Card>
+
+// Spacious - 寬鬆模式
+<Card size="lg" padding="lg">
+  <CardHeader title="寬鬆卡片" />
+  <CardBody>
+    <p>更多的留白空間</p>
+  </CardBody>
+</Card>
+```
+
+## 響應式網格
+
+```tsx
+// 響應式卡片網格
+export const CardGrid = ({ cards }: { cards: CardData[] }) => {
+  return (
+    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {cards.map((card, index) => (
+        <motion.div
+          key={card.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+        >
+          <Card
+            variant="interactive"
+            onClick={() => handleCardClick(card.id)}
+          >
+            <CardHeader
+              title={card.title}
+              subtitle={card.subtitle}
+            />
+            <CardBody>
+              {card.content}
+            </CardBody>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+```
+
+## 常見陷阱與解決方案
+
+### 1. 焦點管理
+```tsx
+// ❌ 錯誤：沒有正確的鍵盤支援
+<div onClick={handleClick}>
+  {content}
+</div>
+
+// ✅ 正確：完整的鍵盤支援
+<div
+  role="button"
+  tabIndex={0}
+  onClick={handleClick}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }}
+>
+  {content}
+</div>
+```
+
+### 2. 動畫性能
+```tsx
+// ❌ 錯誤：會觸發重排的屬性
+const badVariants = {
+  hover: { width: '110%', height: '110%' }
+}
+
+// ✅ 正確：只使用 transform 和 opacity
+const goodVariants = {
+  hover: { scale: 1.05, y: -4 }
+}
+```
+
+### 3. 無障礙標籤
+```tsx
+// ✅ 正確的 ARIA 使用
+<Card
+  role="article"
+  aria-labelledby="card-title"
+  aria-describedby="card-description"
+>
+  <h3 id="card-title">{title}</h3>
+  <p id="card-description">{description}</p>
+</Card>
+```
+
+## 無障礙設計要點
+
+1. **語意化結構**：使用適當的 HTML 標籤和 ARIA 屬性
+2. **鍵盤導航**：確保所有互動元素都能用鍵盤操作
+3. **對比度**：確保文字與背景有足夠的對比度
+4. **螢幕閱讀器**：提供適當的標籤和描述
+5. **動畫偏好**：尊重用戶的動畫偏好設定
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}
+```
+
+## 效能優化
+
+1. **懶載入**：對於圖片卡片使用懶載入
+2. **虛擬化**：大量卡片時考慮虛擬滾動
+3. **記憶化**：使用 React.memo 避免不必要的重渲染
+4. **CSS 優化**：使用 transform 而非改變 layout 屬性
+
+這個卡片元件提供了完整的功能和良好的開發體驗，可以滿足大部分的使用場景。記住要根據具體需求調整樣式和功能。
