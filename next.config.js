@@ -12,8 +12,15 @@ const nextConfig = {
   experimental: {
     mdxRs: false,
   },
-  // Enable static export for better performance
-  output: 'standalone',
+  // Enable static export for GitHub Pages
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true
+  },
+  // GitHub Pages uses a subdirectory
+  basePath: process.env.NODE_ENV === 'production' ? '/design-to-code-hub' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/design-to-code-hub/' : '',
 }
 
 module.exports = withMDX(nextConfig)

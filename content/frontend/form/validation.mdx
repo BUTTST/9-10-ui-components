@@ -344,8 +344,8 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
           )}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={cn(
-            error && `${id}-error`,
-            helperText && `${id}-help`
+            error && (id + '-error'),
+            helperText && (id + '-help')
           )}
           {...props}
         />
@@ -372,7 +372,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
       {/* 錯誤訊息 */}
       {error && (
         <p
-          id={`${id}-error`}
+          id={id + '-error'}
           className="text-sm text-red-600 dark:text-red-400"
           role="alert"
         >
@@ -383,7 +383,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(({
       {/* 輔助文字 */}
       {helperText && !error && (
         <p
-          id={`${id}-help`}
+          id={id + '-help'}
           className="text-sm text-gray-500 dark:text-gray-400"
         >
           {helperText}
@@ -509,7 +509,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(({
 
       {error && (
         <p
-          id={`${id}-error`}
+          id={id + '-error'}
           className="text-sm text-red-600 dark:text-red-400"
           role="alert"
         >
@@ -519,7 +519,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(({
 
       {helperText && !error && (
         <p
-          id={`${id}-help`}
+          id={id + '-help'}
           className="text-sm text-gray-500 dark:text-gray-400"
         >
           {helperText}
@@ -600,16 +600,16 @@ export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>
         )}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={cn(
-          error && `${id}-error`,
-          helperText && `${id}-help`,
-          maxLength && `${id}-count`
+          error && (id + '-error'),
+          helperText && (id + '-help'),
+          maxLength && (id + '-count')
         )}
         {...props}
       />
 
       {error && (
         <p
-          id={`${id}-error`}
+          id={id + '-error'}
           className="text-sm text-red-600 dark:text-red-400"
           role="alert"
         >
@@ -620,7 +620,7 @@ export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>
       <div className="flex justify-between">
         {helperText && !error && (
           <p
-            id={`${id}-help`}
+            id={id + '-help'}
             className="text-sm text-gray-500 dark:text-gray-400"
           >
             {helperText}
@@ -629,7 +629,7 @@ export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>
         
         {maxLength && (
           <p
-            id={`${id}-count`}
+            id={id + '-count'}
             className="text-xs text-gray-500 dark:text-gray-400"
           >
             {value.length} / {maxLength}
@@ -859,7 +859,7 @@ export async function registerUser(data: z.infer<typeof userRegistrationSchema>)
       user: {
         id: user.id,
         email: user.email,
-        name: `${user.firstName} ${user.lastName}`
+        name: user.firstName + ' ' + user.lastName
       }
     }
     
